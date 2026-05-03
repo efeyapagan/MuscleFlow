@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Dumbbell, TrendingUp, Flame } from 'lucide-react'
+import BottomNav from './BottomNav'
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -55,24 +56,7 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-zinc-900 border-t border-zinc-800 flex">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                active ? 'text-orange-400' : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <Icon className="w-5 h-5" />
-              {label}
-            </Link>
-          )
-        })}
-      </nav>
+      <BottomNav />
     </>
   )
 }

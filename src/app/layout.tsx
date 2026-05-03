@@ -3,6 +3,7 @@ import { Geist } from 'next/font/google'
 import './globals.css'
 import Sidebar from '@/components/Sidebar'
 import { WorkoutProvider } from '@/lib/WorkoutContext'
+import AuthProvider from '@/components/AuthProvider'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" className={`${geistSans.variable} h-full`}>
       <body className="min-h-full bg-zinc-950 text-zinc-100 antialiased">
+        <AuthProvider>
         <WorkoutProvider>
           <div className="flex">
             <Sidebar />
@@ -27,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </main>
           </div>
         </WorkoutProvider>
+        </AuthProvider>
       </body>
     </html>
   )

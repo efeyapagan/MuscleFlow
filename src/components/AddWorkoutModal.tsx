@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Plus, Trash2 } from 'lucide-react'
+import { X, Plus, Trash2, CheckCheck } from 'lucide-react'
 import { Workout, WorkoutCategory, WorkoutStatus, ExerciseEntry, SetData } from '@/lib/types'
 import { useWorkouts } from '@/lib/WorkoutContext'
+import RestTimer from './RestTimer'
 
 interface Props {
   onClose: () => void
@@ -42,6 +43,7 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const [exercises, setExercises] = useState<ExerciseEntry[]>(
     initialWorkout?.exercises?.length ? initialWorkout.exercises : [newExercise()]
   )
+  const [restTimer, setRestTimer] = useState<{ exerciseId: string; setIdx: number } | null>(null)
 
   const addExercise = () => setExercises((prev) => [...prev, newExercise()])
 
@@ -238,16 +240,27 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                   </div>
 
                   {/* Sets header */}
-                  <div className="grid grid-cols-3 gap-2 mb-2 px-1">
+                  <div className="grid gap-2 mb-2 px-1" style={{ gridTemplateColumns: '1fr 1fr 1fr auto' }}>
                     <span className="text-xs text-zinc-500">Set</span>
                     <span className="text-xs text-zinc-500">Tekrar</span>
                     <span className="text-xs text-zinc-500">Ağırlık (kg)</span>
+                    <span className="w-7" />
                   </div>
+
+                  {/* Rest Timer */}
+                  {restTimer?.exerciseId === exercise.id && (
+                    <div className="mb-2">
+                      <RestTimer
+                        totalSeconds={90}
+                        onDismiss={() => setRestTimer(null)}
+                      />
+                    </div>
+                  )}
 
                   {/* Sets */}
                   <div className="space-y-2">
                     {exercise.sets.map((set, setIdx) => (
-                      <div key={setIdx} className="grid grid-cols-3 gap-2 items-center">
+                      <div key={setIdx} className="grid gap-2 items-center" style={{ gridTemplateColumns: '1fr 1fr 1fr auto' }}>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-zinc-500 w-4">{set.setNumber}</span>
                           {exercise.sets.length > 1 && (
@@ -276,6 +289,18 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                           placeholder="—"
                           className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-colors text-sm text-center"
                         />
+                        <button
+                          type="button"
+                          onClick={() => setRestTimer({ exerciseId: exercise.id, setIdx })}
+                          title="Set bitti — dinlenmeye başla"
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            restTimer?.exerciseId === exercise.id && restTimer.setIdx === setIdx
+                              ? 'text-orange-400 bg-orange-500/15'
+                              : 'text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10'
+                          }`}
+                        >
+                          <CheckCheck className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     ))}
                   </div>

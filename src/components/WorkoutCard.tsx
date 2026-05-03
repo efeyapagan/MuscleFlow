@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Clock, Dumbbell, ChevronDown, ChevronUp, Pencil, Trash2, CheckCircle2, Circle, CalendarDays } from 'lucide-react'
+import { Clock, Dumbbell, ChevronDown, Pencil, Trash2, CheckCircle2, Circle, CalendarDays } from 'lucide-react'
 import { Workout, WorkoutCategory, WorkoutStatus } from '@/lib/types'
 import { useWorkouts } from '@/lib/WorkoutContext'
 import AddWorkoutModal from './AddWorkoutModal'
+import WorkoutDetailSheet from './WorkoutDetailSheet'
 
 const CATEGORY_COLORS: Record<WorkoutCategory, string> = {
   Kuvvet: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
@@ -31,7 +32,7 @@ interface Props {
 
 export default function WorkoutCard({ workout }: Props) {
   const { deleteWorkout, updateWorkout } = useWorkouts()
-  const [expanded, setExpanded] = useState(false)
+  const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState(false)
 
   const statusStyle = STATUS_STYLES[workout.status]
@@ -114,53 +115,31 @@ export default function WorkoutCard({ workout }: Props) {
           </div>
 
           {/* Notes preview */}
-          {workout.notes && !expanded && (
+          {workout.notes && (
             <p className="ml-8 mt-2 text-xs text-zinc-500 line-clamp-1">{workout.notes}</p>
           )}
         </div>
 
-        {/* Expandable exercises */}
+        {/* Detail sheet trigger */}
         {workout.exercises.length > 0 && (
-          <>
-            <button
-              onClick={() => setExpanded((v) => !v)}
-              className="w-full flex items-center justify-between px-5 py-2.5 border-t border-zinc-800 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors rounded-b-2xl"
-            >
-              <span>Egzersizleri görüntüle</span>
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-
-            {expanded && (
-              <div className="px-5 pb-4 border-t border-zinc-800 space-y-3 pt-3">
-                {workout.notes && (
-                  <p className="text-xs text-zinc-400 bg-zinc-800/50 rounded-lg px-3 py-2 italic">
-                    &ldquo;{workout.notes}&rdquo;
-                  </p>
-                )}
-                {workout.exercises.map((ex) => (
-                  <div key={ex.id}>
-                    <p className="text-sm font-medium text-zinc-200 mb-1.5">{ex.name}</p>
-                    <div className="space-y-1">
-                      <div className="grid grid-cols-3 gap-2 text-xs text-zinc-500 px-1">
-                        <span>Set</span>
-                        <span>Tekrar</span>
-                        <span>Ağırlık</span>
-                      </div>
-                      {ex.sets.map((set) => (
-                        <div key={set.setNumber} className="grid grid-cols-3 gap-2 text-xs text-zinc-300 bg-zinc-800/40 rounded-lg px-2 py-1.5">
-                          <span className="text-zinc-500">{set.setNumber}</span>
-                          <span>{set.reps} tekrar</span>
-                          <span>{set.weight != null ? `${set.weight} kg` : '—'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="w-full flex items-center justify-between px-5 py-2.5 border-t border-zinc-800 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors rounded-b-2xl"
+          >
+            <span>Egzersizleri görüntüle</span>
+            <ChevronDown className="w-4 h-4" />
+          </button>
         )}
       </div>
+
+      {sheetOpen && (
+        <WorkoutDetailSheet
+          workout={workout}
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          onEdit={() => setEditing(true)}
+        />
+      )}
 
       {editing && (
         <AddWorkoutModal onClose={() => setEditing(false)} initialWorkout={workout} />
