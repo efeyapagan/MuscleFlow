@@ -19,8 +19,13 @@ export async function POST(req: NextRequest) {
     await prisma.user.create({ data: { name: name || null, email, password: hashed } })
 
     return NextResponse.json({ ok: true }, { status: 201 })
-  } catch (err) {
-    console.error('[register]', err)
-    return NextResponse.json({ error: 'Sunucu hatası. Lütfen tekrar dene.' }, { status: 500 })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    const code = (err as Record<string, unknown>)?.code
+    console.error('[register] code:', code, 'message:', message)
+    return NextResponse.json(
+      { error: 'Sunucu hatası.', code: code ?? null, detail: message.slice(0, 200) },
+      { status: 500 }
+    )
   }
 }
