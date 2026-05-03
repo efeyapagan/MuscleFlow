@@ -18,6 +18,75 @@ const STATUSES: { value: WorkoutStatus; label: string }[] = [
   { value: 'atlandi', label: 'Atlandı' },
 ]
 
+const WORKOUT_NAMES = [
+  'Göğüs',
+  'Sırt',
+  'Omuz',
+  'Kol (Bicep & Tricep)',
+  'Bacak',
+  'Karın / Core',
+  'Göğüs & Tricep',
+  'Sırt & Bicep',
+  'Omuz & Kol',
+  'Bacak & Kalça',
+  'Full Body',
+  'Kardiyo',
+  'HIIT',
+  'Esneklik / Yoga',
+  'Ön Kol',
+  'Özel...',
+]
+
+function Stepper({
+  value,
+  onChange,
+  min = 0,
+  max = 999,
+  step = 1,
+  placeholder = '—',
+}: {
+  value: number | undefined
+  onChange: (v: number | undefined) => void
+  min?: number
+  max?: number
+  step?: number
+  placeholder?: string
+}) {
+  const dec = () => {
+    const cur = value ?? 0
+    const next = Math.round((cur - step) * 10) / 10
+    if (next < min) return
+    onChange(next)
+  }
+  const inc = () => {
+    const cur = value ?? 0
+    const next = Math.round((cur + step) * 10) / 10
+    if (next > max) return
+    onChange(next)
+  }
+  return (
+    <div className="flex items-center bg-zinc-800 border border-zinc-700/60 rounded-xl overflow-hidden select-none">
+      <button
+        type="button"
+        onPointerDown={(e) => { e.preventDefault(); dec() }}
+        className="w-8 py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-700/60 transition-colors text-base font-bold flex items-center justify-center flex-shrink-0"
+      >
+        −
+      </button>
+      <span className="flex-1 text-center text-sm font-medium text-white tabular-nums">
+        {value !== undefined ? value : <span className="text-zinc-600">{placeholder}</span>}
+      </span>
+      <button
+        type="button"
+        onPointerDown={(e) => { e.preventDefault(); inc() }}
+        className="w-8 py-2.5 text-zinc-400 hover:text-white hover:bg-zinc-700/60 transition-colors text-base font-bold flex items-center justify-center flex-shrink-0"
+      >
+        +
+      </button>
+    </div>
+  )
+}
+
 function newExercise(): ExerciseEntry {
   return {
     id: crypto.randomUUID(),
@@ -37,7 +106,14 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const { addWorkout, updateWorkout } = useWorkouts()
   const isEdit = !!initialWorkout
 
-  const [title, setTitle] = useState(initialWorkout?.title ?? '')
+  const isCustomTitle = initialWorkout?.title
+    ? !WORKOUT_NAMES.slice(0, -1).includes(initialWorkout.title)
+    : false
+  const [titleSelect, setTitleSelect] = useState(
+    isCustomTitle ? 'Özel...' : (initialWorkout?.title ?? WORKOUT_NAMES[0])
+  )
+  const [titleCustom, setTitleCustom] = useState(isCustomTitle ? (initialWorkout?.title ?? '') : '')
+  const title = titleSelect === 'Özel...' ? titleCustom : titleSelect
   const [category, setCategory] = useState<WorkoutCategory>(initialWorkout?.category ?? 'Kuvvet')
   const [status, setStatus] = useState<WorkoutStatus>(initialWorkout?.status ?? 'tamamlandi')
   const [date, setDate] = useState(initialWorkout?.date ?? new Date().toISOString().split('T')[0])
@@ -141,14 +217,28 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
 
         <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
           {/* Title */}
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Antrenman adı (örn. Göğüs & Tricep)"
-            required
-            className={`${INPUT_BASE} px-4 py-3 text-base font-medium`}
-          />
+          <div className="space-y-2">
+            <select
+              value={titleSelect}
+              onChange={(e) => setTitleSelect(e.target.value)}
+              className={`${INPUT_BASE} px-4 py-3 text-base font-medium`}
+            >
+              {WORKOUT_NAMES.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            {titleSelect === 'Özel...' && (
+              <input
+                type="text"
+                value={titleCustom}
+                onChange={(e) => setTitleCustom(e.target.value)}
+                placeholder="Antrenman adını yaz..."
+                autoFocus
+                required
+                className={`${INPUT_BASE} px-4 py-3 text-sm`}
+              />
+            )}
+          </div>
 
           {/* Category + Status row */}
           <div className="grid grid-cols-2 gap-3">
@@ -176,7 +266,7 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
 
           {/* Date + Duration row */}
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Tarih</label>
               <input
                 type="date"
@@ -185,15 +275,15 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                 className={`${INPUT_BASE} px-3 py-3 text-sm`}
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Süre (dk)</label>
-              <input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                min="0"
+              <Stepper
+                value={Number(duration) || undefined}
+                onChange={(v) => setDuration(String(v ?? 0))}
+                min={0}
+                max={600}
+                step={5}
                 placeholder="60"
-                className={`${INPUT_BASE} px-3 py-3 text-sm`}
               />
             </div>
           </div>
@@ -263,25 +353,22 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                           <span className="text-sm font-semibold text-zinc-500 text-center">{set.setNumber}</span>
 
                           {/* Reps */}
-                          <input
-                            type="number"
-                            inputMode="numeric"
+                          <Stepper
                             value={set.reps}
-                            onChange={(e) => updateSet(exercise.id, setIdx, 'reps', e.target.value)}
-                            min="0"
-                            className="w-full py-2.5 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white text-sm font-medium text-center focus:outline-none focus:border-zinc-600 transition-colors"
+                            onChange={(v) => updateSet(exercise.id, setIdx, 'reps', String(v ?? 0))}
+                            min={0}
+                            max={999}
+                            step={1}
                           />
 
                           {/* Weight */}
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            value={set.weight ?? ''}
-                            onChange={(e) => updateSet(exercise.id, setIdx, 'weight', e.target.value)}
-                            min="0"
-                            step="0.5"
+                          <Stepper
+                            value={set.weight}
+                            onChange={(v) => updateSet(exercise.id, setIdx, 'weight', v !== undefined ? String(v) : '')}
+                            min={0}
+                            max={500}
+                            step={2.5}
                             placeholder="—"
-                            className="w-full py-2.5 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white placeholder-zinc-700 text-sm font-medium text-center focus:outline-none focus:border-zinc-600 transition-colors"
                           />
 
                           {/* Done / remove */}
