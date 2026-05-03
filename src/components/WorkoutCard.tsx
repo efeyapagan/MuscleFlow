@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Clock, Dumbbell, ChevronDown, Pencil, Trash2, CheckCircle2, Circle, CalendarDays } from 'lucide-react'
 import { Workout, WorkoutCategory, WorkoutStatus } from '@/lib/types'
 import { useWorkouts } from '@/lib/WorkoutContext'
@@ -34,6 +34,8 @@ export default function WorkoutCard({ workout }: Props) {
   const { deleteWorkout, updateWorkout } = useWorkouts()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [swipeFlash, setSwipeFlash] = useState<'done' | 'skip' | null>(null)
+  const touchStartX = useRef<number | null>(null)
 
   const statusStyle = STATUS_STYLES[workout.status]
   const categoryStyle = CATEGORY_COLORS[workout.category]
@@ -43,9 +45,38 @@ export default function WorkoutCard({ workout }: Props) {
     updateWorkout({ ...workout, status: next })
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const delta = e.changedTouches[0].clientX - touchStartX.current
+    touchStartX.current = null
+    if (delta > 72) {
+      updateWorkout({ ...workout, status: 'tamamlandi' })
+      setSwipeFlash('done')
+      setTimeout(() => setSwipeFlash(null), 500)
+    } else if (delta < -72) {
+      updateWorkout({ ...workout, status: 'atlandi' })
+      setSwipeFlash('skip')
+      setTimeout(() => setSwipeFlash(null), 500)
+    }
+  }
+
   return (
     <>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-all duration-200 group">
+      <div
+        className="relative bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-700 transition-all duration-200 group overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Swipe flash overlay */}
+        {swipeFlash && (
+          <div className={`absolute inset-0 z-10 rounded-2xl pointer-events-none transition-opacity duration-300 ${
+            swipeFlash === 'done' ? 'bg-green-500/20' : 'bg-zinc-500/20'
+          }`} />
+        )}
         {/* Card top */}
         <div className="p-5">
           <div className="flex items-start justify-between gap-3">

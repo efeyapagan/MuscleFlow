@@ -12,11 +12,6 @@ interface Props {
 }
 
 const CATEGORIES: WorkoutCategory[] = ['Kuvvet', 'Kardiyo', 'Esneklik', 'HIIT', 'Spor']
-const STATUSES: { value: WorkoutStatus; label: string }[] = [
-  { value: 'tamamlandi', label: 'Tamamlandı' },
-  { value: 'planli', label: 'Planlı' },
-  { value: 'atlandi', label: 'Atlandı' },
-]
 
 const WORKOUT_NAMES = [
   'Göğüs',
@@ -115,7 +110,7 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const [titleCustom, setTitleCustom] = useState(isCustomTitle ? (initialWorkout?.title ?? '') : '')
   const title = titleSelect === 'Özel...' ? titleCustom : titleSelect
   const [category, setCategory] = useState<WorkoutCategory>(initialWorkout?.category ?? 'Kuvvet')
-  const [status, setStatus] = useState<WorkoutStatus>(initialWorkout?.status ?? 'tamamlandi')
+  const status: WorkoutStatus = initialWorkout?.status ?? 'tamamlandi'
   const [date, setDate] = useState(initialWorkout?.date ?? new Date().toISOString().split('T')[0])
   const [duration, setDuration] = useState(String(initialWorkout?.duration ?? 60))
   const [notes, setNotes] = useState(initialWorkout?.notes ?? '')
@@ -240,33 +235,21 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
             )}
           </div>
 
-          {/* Category + Status row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Kategori</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value as WorkoutCategory)}
-                className={`${INPUT_BASE} px-3 py-3 text-sm`}
-              >
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Durum</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as WorkoutStatus)}
-                className={`${INPUT_BASE} px-3 py-3 text-sm`}
-              >
-                {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </div>
+          {/* Category */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Kategori</label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as WorkoutCategory)}
+              className={`${INPUT_BASE} px-3 py-3 text-sm`}
+            >
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
 
           {/* Date + Duration row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="min-w-0">
+          <div className="flex gap-3">
+            <div className="flex-1 min-w-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Tarih</label>
               <input
                 type="date"
@@ -275,7 +258,7 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                 className={`${INPUT_BASE} px-3 py-3 text-sm`}
               />
             </div>
-            <div className="min-w-0">
+            <div className="w-36 flex-shrink-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Süre (dk)</label>
               <Stepper
                 value={Number(duration) || undefined}
