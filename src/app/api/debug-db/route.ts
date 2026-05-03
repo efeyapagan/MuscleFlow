@@ -13,29 +13,48 @@ export async function GET() {
   const adapter = new PrismaNeon({ connectionString: getUrl() })
   const db = new PrismaClient({ adapter })
 
+  const results: Record<string, unknown> = {}
+
   try {
-    // Check actual columns in User table
-    const cols = await db.$queryRawUnsafe<{ column_name: string; data_type: string }[]>(
-      `SELECT column_name, data_type FROM information_schema.columns
+    // List all tables in public schema
+    const tables = await db.$queryRawUnsafe<{ tbl: string }[]>(
+      `SELECT table_name::text AS tbl
+       FROM information_schema.tables
+       WHERE table_schema = 'public'`
+    )
+    results.tables = tables.map((r) => r.tbl)
+
+    // Columns in "User" table
+    const userCols = await db.$queryRawUnsafe<{ col: string; typ: string }[]>(
+      `SELECT column_name::text AS col, data_type::text AS typ
+       FROM information_schema.columns
        WHERE table_schema = 'public' AND table_name = 'User'
        ORDER BY ordinal_position`
     )
+    results.userColumns = userCols
 
-    const workoutCols = await db.$queryRawUnsafe<{ column_name: string; data_type: string }[]>(
-      `SELECT column_name, data_type FROM information_schema.columns
+    // Columns in "Workout" table
+    const woCols = await db.$queryRawUnsafe<{ col: string; typ: string }[]>(
+      `SELECT column_name::text AS col, data_type::text AS typ
+       FROM information_schema.columns
        WHERE table_schema = 'public' AND table_name = 'Workout'
        ORDER BY ordinal_position`
     )
+    results.workoutColumns = woCols
 
-    return NextResponse.json({
-      userColumns: cols,
-      workoutColumns: workoutCols,
-      dbUrl: getUrl().replace(/:[^:@]+@/, ':***@'),
-    })
+    // Try a real Prisma ORM query
+    try {
+      const count = await db.user.count()
+      results.userCount = count
+    } catch (e) {
+      results.userOrmError = (e as Error).message
+    }
+
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    results.error = (err as Error).message
   } finally {
     await db.$disconnect()
   }
+
+  return NextResponse.json(results)
 }
