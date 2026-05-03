@@ -32,6 +32,24 @@ const WORKOUT_NAMES = [
   'Özel...',
 ]
 
+const EXERCISE_PRESETS: Record<string, string[]> = {
+  'Göğüs':               ['Bench Press', 'İncline Press', 'Decline Press', 'Dumbbell Fly', 'Cable Crossover', 'Push-up', 'Dips'],
+  'Sırt':                ['Deadlift', 'Pull-up', 'Lat Pulldown', 'Seated Row', 'Bent-over Row', 'T-Bar Row', 'Face Pull'],
+  'Omuz':                ['Shoulder Press', 'Lateral Raise', 'Front Raise', 'Reverse Fly', 'Arnold Press', 'Upright Row', 'Shrug'],
+  'Kol (Bicep & Tricep)':['Barbell Curl', 'Dumbbell Curl', 'Hammer Curl', 'Tricep Pushdown', 'Skull Crusher', 'Overhead Extension', 'Close Grip Bench'],
+  'Bacak':               ['Squat', 'Leg Press', 'Lunge', 'Leg Curl', 'Leg Extension', 'Calf Raise', 'RDL'],
+  'Karın / Core':        ['Plank', 'Crunch', 'Leg Raise', 'Russian Twist', 'Ab Wheel', 'Cable Crunch', 'Mountain Climber'],
+  'Göğüs & Tricep':      ['Bench Press', 'İncline Press', 'Dumbbell Fly', 'Tricep Pushdown', 'Skull Crusher', 'Dips'],
+  'Sırt & Bicep':        ['Pull-up', 'Lat Pulldown', 'Seated Row', 'Barbell Curl', 'Dumbbell Curl', 'Hammer Curl'],
+  'Omuz & Kol':          ['Shoulder Press', 'Lateral Raise', 'Barbell Curl', 'Hammer Curl', 'Tricep Pushdown'],
+  'Bacak & Kalça':       ['Squat', 'Leg Press', 'Hip Thrust', 'Lunge', 'RDL', 'Leg Curl', 'Calf Raise'],
+  'Full Body':           ['Squat', 'Deadlift', 'Bench Press', 'Pull-up', 'Shoulder Press', 'Plank'],
+  'Kardiyo':             ['Koşu', 'Bisiklet', 'Rowing', 'Jump Rope', 'Stair Climber', 'Elliptical'],
+  'HIIT':                ['Burpee', 'Box Jump', 'Mountain Climber', 'Jump Squat', 'Sprint', 'Kettlebell Swing'],
+  'Esneklik / Yoga':     ['Cat-Cow', 'Downward Dog', 'Pigeon Pose', "Child's Pose", 'Warrior I', 'Hip Flexor Stretch'],
+  'Ön Kol':              ['Wrist Curl', 'Reverse Curl', 'Hammer Curl', 'Farmer Walk'],
+}
+
 function Stepper({
   value,
   onChange,
@@ -118,8 +136,18 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
     initialWorkout?.exercises?.length ? initialWorkout.exercises : [newExercise()]
   )
   const [restTimer, setRestTimer] = useState<{ exerciseId: string; setIdx: number } | null>(null)
+  const [showPresets, setShowPresets] = useState(false)
 
-  const addExercise = () => setExercises((prev) => [...prev, newExercise()])
+  const presets = EXERCISE_PRESETS[title] ?? []
+
+  const addExercise = () => {
+    if (presets.length > 0) { setShowPresets(true); return }
+    setExercises((prev) => [...prev, newExercise()])
+  }
+  const addPresetExercise = (name: string) => {
+    setExercises((prev) => [...prev, { ...newExercise(), name }])
+    setShowPresets(false)
+  }
   const removeExercise = (id: string) => setExercises((prev) => prev.filter((e) => e.id !== id))
   const updateExerciseName = (id: string, name: string) =>
     setExercises((prev) => prev.map((e) => (e.id === id ? { ...e, name } : e)))
@@ -249,16 +277,16 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
 
           {/* Date + Duration row */}
           <div className="flex gap-3">
-            <div className="flex-1 min-w-0">
+            <div className="w-40 flex-shrink-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Tarih</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className={`${INPUT_BASE} px-3 py-3 text-sm`}
+                className={`${INPUT_BASE} px-2 py-3 text-xs`}
               />
             </div>
-            <div className="w-36 flex-shrink-0">
+            <div className="flex-1 min-w-0">
               <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Süre (dk)</label>
               <Stepper
                 value={Number(duration) || undefined}
@@ -284,6 +312,43 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                 Egzersiz Ekle
               </button>
             </div>
+
+            {/* Preset picker */}
+            {showPresets && presets.length > 0 && (
+              <div className="mb-3 bg-zinc-900 border border-zinc-700 rounded-2xl p-3">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-medium text-zinc-400">Egzersiz seç</span>
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => { setExercises((prev) => [...prev, newExercise()]); setShowPresets(false) }}
+                      className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-lg hover:bg-zinc-800 transition-colors"
+                    >
+                      Boş ekle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPresets(false)}
+                      className="p-1 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {presets.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => addPresetExercise(name)}
+                      className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-xs text-zinc-300 hover:text-white transition-colors"
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               {exercises.map((exercise, exIdx) => (

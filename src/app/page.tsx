@@ -17,7 +17,8 @@ const CATEGORY_EMOJI: Record<WorkoutCategory, string> = {
 
 function getStartOfWeek() {
   const d = new Date()
-  d.setDate(d.getDate() - d.getDay() + 1)
+  const day = d.getDay() || 7 // treat Sunday (0) as 7 so Monday is always start
+  d.setDate(d.getDate() - day + 1)
   d.setHours(0, 0, 0, 0)
   return d
 }
