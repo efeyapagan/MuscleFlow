@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Plus, Trash2, CheckCheck } from 'lucide-react'
+import { X, Plus, Trash2 } from 'lucide-react'
 import { Workout, WorkoutCategory, WorkoutStatus, ExerciseEntry, SetData } from '@/lib/types'
 import { useWorkouts } from '@/lib/WorkoutContext'
-import RestTimer from './RestTimer'
 
 interface Props {
   onClose: () => void
@@ -135,7 +134,6 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const [exercises, setExercises] = useState<ExerciseEntry[]>(
     initialWorkout?.exercises?.length ? initialWorkout.exercises : [newExercise()]
   )
-  const [restTimer, setRestTimer] = useState<{ exerciseId: string; setIdx: number } | null>(null)
   const [showPresets, setShowPresets] = useState(false)
 
   const presets = EXERCISE_PRESETS[title] ?? []
@@ -373,21 +371,12 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                     )}
                   </div>
 
-                  {/* Rest timer */}
-                  {restTimer?.exerciseId === exercise.id && (
-                    <div className="px-3 pt-3">
-                      <RestTimer totalSeconds={90} onDismiss={() => setRestTimer(null)} />
-                    </div>
-                  )}
-
                   {/* Sets table */}
                   <div className="px-3 pt-2 pb-1">
-                    {/* Column headers */}
-                    <div className="grid items-center mb-1" style={{ gridTemplateColumns: '28px 1fr 1fr 36px' }}>
+                    <div className="grid items-center mb-1" style={{ gridTemplateColumns: '28px 1fr 1fr' }}>
                       <span className="text-xs text-zinc-600">Set</span>
                       <span className="text-xs text-zinc-600 text-center">Tekrar</span>
                       <span className="text-xs text-zinc-600 text-center">Ağırlık kg</span>
-                      <span />
                     </div>
 
                     <div className="space-y-1.5">
@@ -395,12 +384,9 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                         <div
                           key={setIdx}
                           className="grid items-center gap-1.5"
-                          style={{ gridTemplateColumns: '28px 1fr 1fr 36px' }}
+                          style={{ gridTemplateColumns: '28px 1fr 1fr' }}
                         >
-                          {/* Set number */}
                           <span className="text-sm font-semibold text-zinc-500 text-center">{set.setNumber}</span>
-
-                          {/* Reps */}
                           <Stepper
                             value={set.reps}
                             onChange={(v) => updateSet(exercise.id, setIdx, 'reps', String(v ?? 0))}
@@ -408,8 +394,6 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                             max={999}
                             step={1}
                           />
-
-                          {/* Weight */}
                           <Stepper
                             value={set.weight}
                             onChange={(v) => updateSet(exercise.id, setIdx, 'weight', v !== undefined ? String(v) : '')}
@@ -418,26 +402,6 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
                             step={2.5}
                             placeholder="—"
                           />
-
-                          {/* Done / remove */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (restTimer?.exerciseId === exercise.id && restTimer.setIdx === setIdx) {
-                                setRestTimer(null)
-                              } else {
-                                setRestTimer({ exerciseId: exercise.id, setIdx })
-                              }
-                            }}
-                            title="Set bitti — dinlenme başlat"
-                            className={`h-10 w-9 flex items-center justify-center rounded-xl transition-colors ${
-                              restTimer?.exerciseId === exercise.id && restTimer.setIdx === setIdx
-                                ? 'bg-orange-500/20 text-orange-400'
-                                : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
-                            }`}
-                          >
-                            <CheckCheck className="w-4 h-4" />
-                          </button>
                         </div>
                       ))}
                     </div>

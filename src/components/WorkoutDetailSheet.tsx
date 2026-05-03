@@ -1,15 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { Drawer } from 'vaul'
 import {
-  Clock,
-  Dumbbell,
-  CalendarDays,
-  CheckCircle2,
-  Circle,
-  Pencil,
+  Clock, Dumbbell, CalendarDays, CheckCircle2, Circle, Pencil, CheckCheck,
 } from 'lucide-react'
 import { Workout, WorkoutCategory, WorkoutStatus } from '@/lib/types'
+import RestTimer from './RestTimer'
 
 const CATEGORY_COLORS: Record<WorkoutCategory, string> = {
   Kuvvet: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
@@ -27,9 +24,7 @@ const STATUS_STYLES: Record<WorkoutStatus, { label: string; className: string }>
 
 function formatDate(dateStr: string) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('tr-TR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    day: 'numeric', month: 'long', year: 'numeric',
   })
 }
 
@@ -43,6 +38,22 @@ interface Props {
 export default function WorkoutDetailSheet({ workout, open, onClose, onEdit }: Props) {
   const statusStyle = STATUS_STYLES[workout.status]
   const categoryStyle = CATEGORY_COLORS[workout.category]
+  const [doneSets, setDoneSets] = useState<Set<string>>(new Set())
+  const [restTimer, setRestTimer] = useState<{ exId: string; setIdx: number } | null>(null)
+
+  const handleSetDone = (exId: string, setIdx: number) => {
+    const key = `${exId}-${setIdx}`
+    setDoneSets((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+    if (restTimer?.exId === exId && restTimer.setIdx === setIdx) {
+      setRestTimer(null)
+    } else {
+      setRestTimer({ exId, setIdx })
+    }
+  }
 
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()}>
@@ -59,11 +70,9 @@ export default function WorkoutDetailSheet({ workout, open, onClose, onEdit }: P
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  {workout.status === 'tamamlandi' ? (
-                    <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  ) : (
-                    <Circle className="w-5 h-5 text-zinc-500 flex-shrink-0" />
-                  )}
+                  {workout.status === 'tamamlandi'
+                    ? <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    : <Circle className="w-5 h-5 text-zinc-500 flex-shrink-0" />}
                   <h2 className="text-lg font-bold text-white truncate">{workout.title}</h2>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap ml-7">
@@ -122,24 +131,55 @@ export default function WorkoutDetailSheet({ workout, open, onClose, onEdit }: P
                   <p className="text-sm font-semibold text-zinc-100">{ex.name}</p>
                   <span className="ml-auto text-xs text-zinc-500">{ex.sets.length} set</span>
                 </div>
+
+                {/* Rest timer for this exercise */}
+                {restTimer?.exId === ex.id && (
+                  <div className="mb-3">
+                    <RestTimer totalSeconds={90} onDismiss={() => setRestTimer(null)} />
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
-                  <div className="grid grid-cols-3 gap-2 text-xs text-zinc-500 px-1">
+                  <div className="grid grid-cols-4 gap-2 text-xs text-zinc-500 px-1">
                     <span>Set</span>
                     <span>Tekrar</span>
                     <span>Ağırlık</span>
+                    <span />
                   </div>
-                  {ex.sets.map((set) => (
-                    <div
-                      key={set.setNumber}
-                      className="grid grid-cols-3 gap-2 text-xs text-zinc-300 bg-zinc-800/60 rounded-lg px-2 py-2"
-                    >
-                      <span className="text-zinc-500 font-medium">{set.setNumber}</span>
-                      <span>{set.reps} tekrar</span>
-                      <span className={set.weight != null ? 'text-orange-300 font-medium' : 'text-zinc-600'}>
-                        {set.weight != null ? `${set.weight} kg` : '—'}
-                      </span>
-                    </div>
-                  ))}
+                  {ex.sets.map((set, setIdx) => {
+                    const key = `${ex.id}-${setIdx}`
+                    const done = doneSets.has(key)
+                    return (
+                      <div
+                        key={set.setNumber}
+                        className={`grid grid-cols-4 gap-2 text-xs rounded-lg px-2 py-2 transition-colors ${
+                          done
+                            ? 'bg-green-500/10 border border-green-500/20'
+                            : 'bg-zinc-800/60'
+                        }`}
+                      >
+                        <span className="text-zinc-500 font-medium">{set.setNumber}</span>
+                        <span className={done ? 'line-through text-zinc-500' : 'text-zinc-300'}>{set.reps} tekrar</span>
+                        <span className={
+                          done ? 'line-through text-zinc-500' :
+                          set.weight != null ? 'text-orange-300 font-medium' : 'text-zinc-600'
+                        }>
+                          {set.weight != null ? `${set.weight} kg` : '—'}
+                        </span>
+                        <button
+                          onClick={() => handleSetDone(ex.id, setIdx)}
+                          className={`flex items-center justify-center rounded-lg h-6 w-6 ml-auto transition-colors ${
+                            done
+                              ? 'text-green-400 bg-green-500/15'
+                              : 'text-zinc-600 hover:text-zinc-300'
+                          }`}
+                          title="Set bitti"
+                        >
+                          <CheckCheck className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             ))}

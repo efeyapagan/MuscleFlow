@@ -1,11 +1,36 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Plus, Flame, Clock, Trophy, Zap, TrendingUp, Calendar } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Plus, Flame, Clock, Trophy, Zap, TrendingUp, Calendar, CheckCircle2 } from 'lucide-react'
 import { useWorkouts } from '@/lib/WorkoutContext'
 import WorkoutCard from '@/components/WorkoutCard'
 import AddWorkoutModal from '@/components/AddWorkoutModal'
 import { WorkoutCategory } from '@/lib/types'
+
+interface DayEntry {
+  date: string
+  completedAt: string
+  note: string
+}
+
+const DAY_LOG_KEY = 'mf_daylog'
+
+function loadDayLog(): DayEntry[] {
+  try { return JSON.parse(localStorage.getItem(DAY_LOG_KEY) ?? '[]') } catch { return [] }
+}
+function saveDayLog(log: DayEntry[]) {
+  localStorage.setItem(DAY_LOG_KEY, JSON.stringify(log))
+}
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0]
+}
+
+function formatLogDate(dateStr: string) {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('tr-TR', {
+    weekday: 'long', day: 'numeric', month: 'long',
+  })
+}
 
 const CATEGORY_EMOJI: Record<WorkoutCategory, string> = {
   Kuvvet: '🏋️',
@@ -45,6 +70,27 @@ function calcStreak(workoutDates: string[]): number {
 export default function Dashboard() {
   const { workouts } = useWorkouts()
   const [showModal, setShowModal] = useState(false)
+  const [dayLog, setDayLog] = useState<DayEntry[]>([])
+  const [dayNote, setDayNote] = useState('')
+  const [showNoteInput, setShowNoteInput] = useState(false)
+
+  useEffect(() => { setDayLog(loadDayLog()) }, [])
+
+  const today = todayStr()
+  const todayDone = dayLog.some((e) => e.date === today)
+
+  const completeDay = () => {
+    const entry: DayEntry = {
+      date: today,
+      completedAt: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }),
+      note: dayNote.trim(),
+    }
+    const updated = [entry, ...dayLog.filter((e) => e.date !== today)]
+    setDayLog(updated)
+    saveDayLog(updated)
+    setDayNote('')
+    setShowNoteInput(false)
+  }
 
   const weekStart = getStartOfWeek()
 
@@ -137,6 +183,75 @@ export default function Dashboard() {
           gradient="from-green-500/10 to-teal-500/10"
           border="border-green-500/20"
         />
+      </div>
+
+      {/* Günü Tamamla */}
+      <div className="mb-8">
+        {!todayDone ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+            <p className="text-sm text-zinc-400 mb-3">Bugünkü idmanlarını tamamladın mı?</p>
+            {showNoteInput ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={dayNote}
+                  onChange={(e) => setDayNote(e.target.value)}
+                  placeholder="Kısa not ekle (isteğe bağlı)..."
+                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-zinc-500"
+                  onKeyDown={(e) => e.key === 'Enter' && completeDay()}
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={completeDay}
+                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-semibold text-sm transition-all shadow-lg shadow-orange-500/20"
+                  >
+                    Günü Kaydet
+                  </button>
+                  <button
+                    onClick={() => setShowNoteInput(false)}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-800 text-zinc-400 text-sm hover:text-white transition-colors"
+                  >
+                    İptal
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowNoteInput(true)}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-semibold text-sm transition-all shadow-lg shadow-orange-500/20 flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Günü Tamamla
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-green-500/5 border border-green-500/20 rounded-2xl px-5 py-3 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-green-400">Bugün tamamlandı</p>
+              {dayLog.find((e) => e.date === today)?.note && (
+                <p className="text-xs text-zinc-500 truncate">{dayLog.find((e) => e.date === today)?.note}</p>
+              )}
+            </div>
+            <span className="text-xs text-zinc-600 flex-shrink-0">{dayLog.find((e) => e.date === today)?.completedAt}</span>
+          </div>
+        )}
+
+        {/* Log entries (past days) */}
+        {dayLog.filter((e) => e.date !== today).length > 0 && (
+          <div className="mt-3 space-y-2">
+            {dayLog.filter((e) => e.date !== today).slice(0, 7).map((entry) => (
+              <div key={entry.date} className="flex items-center gap-3 px-4 py-2.5 bg-zinc-900/60 border border-zinc-800 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+                <span className="text-xs text-zinc-400 flex-1">{formatLogDate(entry.date)}</span>
+                {entry.note && <span className="text-xs text-zinc-600 truncate max-w-[120px]">{entry.note}</span>}
+                <span className="text-xs text-zinc-700 flex-shrink-0">{entry.completedAt}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
