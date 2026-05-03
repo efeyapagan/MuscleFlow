@@ -30,6 +30,9 @@ function newSet(setNumber: number): SetData {
   return { setNumber, reps: 10, weight: undefined }
 }
 
+const INPUT_BASE =
+  'w-full bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors'
+
 export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const { addWorkout, updateWorkout } = useWorkouts()
   const isEdit = !!initialWorkout
@@ -46,22 +49,15 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const [restTimer, setRestTimer] = useState<{ exerciseId: string; setIdx: number } | null>(null)
 
   const addExercise = () => setExercises((prev) => [...prev, newExercise()])
-
-  const removeExercise = (id: string) =>
-    setExercises((prev) => prev.filter((e) => e.id !== id))
-
+  const removeExercise = (id: string) => setExercises((prev) => prev.filter((e) => e.id !== id))
   const updateExerciseName = (id: string, name: string) =>
     setExercises((prev) => prev.map((e) => (e.id === id ? { ...e, name } : e)))
-
   const addSet = (exerciseId: string) =>
     setExercises((prev) =>
       prev.map((e) =>
-        e.id === exerciseId
-          ? { ...e, sets: [...e.sets, newSet(e.sets.length + 1)] }
-          : e
+        e.id === exerciseId ? { ...e, sets: [...e.sets, newSet(e.sets.length + 1)] } : e
       )
     )
-
   const removeSet = (exerciseId: string, setIndex: number) =>
     setExercises((prev) =>
       prev.map((e) =>
@@ -75,7 +71,6 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
           : e
       )
     )
-
   const updateSet = (exerciseId: string, setIndex: number, field: keyof SetData, value: string) =>
     setExercises((prev) =>
       prev.map((e) =>
@@ -83,7 +78,17 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
           ? {
               ...e,
               sets: e.sets.map((s, i) =>
-                i === setIndex ? { ...s, [field]: field === 'setNumber' ? Number(value) : value === '' ? undefined : Number(value) } : s
+                i === setIndex
+                  ? {
+                      ...s,
+                      [field]:
+                        field === 'setNumber'
+                          ? Number(value)
+                          : value === ''
+                          ? undefined
+                          : Number(value),
+                    }
+                  : s
               ),
             }
           : e
@@ -93,7 +98,6 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
-
     const workout: Workout = {
       id: initialWorkout?.id ?? crypto.randomUUID(),
       title: title.trim(),
@@ -105,99 +109,91 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
       notes: notes.trim() || undefined,
       createdAt: initialWorkout?.createdAt ?? new Date().toISOString(),
     }
-
-    if (isEdit) {
-      updateWorkout(workout)
-    } else {
-      addWorkout(workout)
-    }
+    if (isEdit) updateWorkout(workout)
+    else addWorkout(workout)
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative w-full md:max-w-2xl max-h-[92vh] overflow-y-auto bg-zinc-900 md:rounded-2xl rounded-t-2xl border border-zinc-800 shadow-2xl">
+      {/* Sheet */}
+      <div className="relative w-full md:max-w-2xl max-h-[94vh] overflow-y-auto bg-zinc-950 md:rounded-2xl rounded-t-3xl border border-zinc-800 shadow-2xl">
+        {/* Drag handle (mobile) */}
+        <div className="flex justify-center pt-3 pb-0 md:hidden">
+          <div className="w-10 h-1 rounded-full bg-zinc-700" />
+        </div>
+
         {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-zinc-900 border-b border-zinc-800">
-          <h2 className="text-lg font-semibold text-white">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-zinc-950 border-b border-zinc-800/80">
+          <h2 className="text-base font-semibold text-white">
             {isEdit ? 'Antrenmanı Düzenle' : 'Yeni Antrenman'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
+        <form onSubmit={handleSubmit} className="px-5 py-5 space-y-5">
           {/* Title */}
-          <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-              Antrenman Adı <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="örn. Göğüs & Tricep"
-              required
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors text-sm"
-            />
-          </div>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Antrenman adı (örn. Göğüs & Tricep)"
+            required
+            className={`${INPUT_BASE} px-4 py-3 text-base font-medium`}
+          />
 
           {/* Category + Status row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Kategori</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Kategori</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value as WorkoutCategory)}
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-orange-500 transition-colors text-sm"
+                className={`${INPUT_BASE} px-3 py-3 text-sm`}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Durum</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Durum</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as WorkoutStatus)}
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-orange-500 transition-colors text-sm"
+                className={`${INPUT_BASE} px-3 py-3 text-sm`}
               >
-                {STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
+                {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
           </div>
 
           {/* Date + Duration row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Tarih</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Tarih</label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-orange-500 transition-colors text-sm"
+                className={`${INPUT_BASE} px-3 py-3 text-sm`}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-1.5">Süre (dk)</label>
+              <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Süre (dk)</label>
               <input
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
                 min="0"
                 placeholder="60"
-                className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors text-sm"
+                className={`${INPUT_BASE} px-3 py-3 text-sm`}
               />
             </div>
           </div>
@@ -205,11 +201,11 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
           {/* Exercises */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-sm font-medium text-zinc-300">Egzersizler</label>
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Egzersizler</span>
               <button
                 type="button"
                 onClick={addExercise}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors border border-zinc-800"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Egzersiz Ekle
@@ -218,100 +214,119 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
 
             <div className="space-y-3">
               {exercises.map((exercise, exIdx) => (
-                <div key={exercise.id} className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4">
-                  {/* Exercise name row */}
-                  <div className="flex items-center gap-2 mb-3">
+                <div key={exercise.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                  {/* Exercise name */}
+                  <div className="flex items-center gap-2 p-3 border-b border-zinc-800/80">
                     <input
                       type="text"
                       value={exercise.name}
                       onChange={(e) => updateExerciseName(exercise.id, e.target.value)}
                       placeholder={`Egzersiz ${exIdx + 1}`}
-                      className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors text-sm"
+                      className="flex-1 bg-transparent text-white placeholder-zinc-600 text-sm font-medium focus:outline-none"
                     />
                     {exercises.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeExercise(exercise.id)}
-                        className="p-2 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition-colors flex-shrink-0"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
 
-                  {/* Sets header */}
-                  <div className="grid gap-2 mb-2 px-1" style={{ gridTemplateColumns: '1fr 1fr 1fr auto' }}>
-                    <span className="text-xs text-zinc-500">Set</span>
-                    <span className="text-xs text-zinc-500">Tekrar</span>
-                    <span className="text-xs text-zinc-500">Ağırlık (kg)</span>
-                    <span className="w-7" />
-                  </div>
-
-                  {/* Rest Timer */}
+                  {/* Rest timer */}
                   {restTimer?.exerciseId === exercise.id && (
-                    <div className="mb-2">
-                      <RestTimer
-                        totalSeconds={90}
-                        onDismiss={() => setRestTimer(null)}
-                      />
+                    <div className="px-3 pt-3">
+                      <RestTimer totalSeconds={90} onDismiss={() => setRestTimer(null)} />
                     </div>
                   )}
 
-                  {/* Sets */}
-                  <div className="space-y-2">
-                    {exercise.sets.map((set, setIdx) => (
-                      <div key={setIdx} className="grid gap-2 items-center" style={{ gridTemplateColumns: '1fr 1fr 1fr auto' }}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-zinc-500 w-4">{set.setNumber}</span>
-                          {exercise.sets.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => removeSet(exercise.id, setIdx)}
-                              className="p-0.5 text-zinc-600 hover:text-red-400 transition-colors"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                        <input
-                          type="number"
-                          value={set.reps}
-                          onChange={(e) => updateSet(exercise.id, setIdx, 'reps', e.target.value)}
-                          min="0"
-                          className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-orange-500 transition-colors text-sm text-center"
-                        />
-                        <input
-                          type="number"
-                          value={set.weight ?? ''}
-                          onChange={(e) => updateSet(exercise.id, setIdx, 'weight', e.target.value)}
-                          min="0"
-                          step="0.5"
-                          placeholder="—"
-                          className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-600 focus:outline-none focus:border-orange-500 transition-colors text-sm text-center"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setRestTimer({ exerciseId: exercise.id, setIdx })}
-                          title="Set bitti — dinlenmeye başla"
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            restTimer?.exerciseId === exercise.id && restTimer.setIdx === setIdx
-                              ? 'text-orange-400 bg-orange-500/15'
-                              : 'text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10'
-                          }`}
+                  {/* Sets table */}
+                  <div className="px-3 pt-2 pb-1">
+                    {/* Column headers */}
+                    <div className="grid items-center mb-1" style={{ gridTemplateColumns: '28px 1fr 1fr 36px' }}>
+                      <span className="text-xs text-zinc-600">Set</span>
+                      <span className="text-xs text-zinc-600 text-center">Tekrar</span>
+                      <span className="text-xs text-zinc-600 text-center">Ağırlık kg</span>
+                      <span />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {exercise.sets.map((set, setIdx) => (
+                        <div
+                          key={setIdx}
+                          className="grid items-center gap-1.5"
+                          style={{ gridTemplateColumns: '28px 1fr 1fr 36px' }}
                         >
-                          <CheckCheck className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
+                          {/* Set number */}
+                          <span className="text-sm font-semibold text-zinc-500 text-center">{set.setNumber}</span>
+
+                          {/* Reps */}
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={set.reps}
+                            onChange={(e) => updateSet(exercise.id, setIdx, 'reps', e.target.value)}
+                            min="0"
+                            className="w-full py-2.5 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white text-sm font-medium text-center focus:outline-none focus:border-zinc-600 transition-colors"
+                          />
+
+                          {/* Weight */}
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            value={set.weight ?? ''}
+                            onChange={(e) => updateSet(exercise.id, setIdx, 'weight', e.target.value)}
+                            min="0"
+                            step="0.5"
+                            placeholder="—"
+                            className="w-full py-2.5 rounded-xl bg-zinc-800 border border-zinc-700/60 text-white placeholder-zinc-700 text-sm font-medium text-center focus:outline-none focus:border-zinc-600 transition-colors"
+                          />
+
+                          {/* Done / remove */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (restTimer?.exerciseId === exercise.id && restTimer.setIdx === setIdx) {
+                                setRestTimer(null)
+                              } else {
+                                setRestTimer({ exerciseId: exercise.id, setIdx })
+                              }
+                            }}
+                            title="Set bitti — dinlenme başlat"
+                            className={`h-10 w-9 flex items-center justify-center rounded-xl transition-colors ${
+                              restTimer?.exerciseId === exercise.id && restTimer.setIdx === setIdx
+                                ? 'bg-orange-500/20 text-orange-400'
+                                : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
+                            }`}
+                          >
+                            <CheckCheck className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => addSet(exercise.id)}
-                    className="mt-2 text-xs text-zinc-500 hover:text-orange-400 transition-colors"
-                  >
-                    + Set ekle
-                  </button>
+                  {/* Add set + remove set row */}
+                  <div className="flex items-center gap-2 px-3 pb-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => addSet(exercise.id)}
+                      className="flex-1 py-2.5 rounded-xl border border-zinc-700/60 text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-zinc-800/50 transition-colors text-xs font-medium"
+                    >
+                      + Set Ekle
+                    </button>
+                    {exercise.sets.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeSet(exercise.id, exercise.sets.length - 1)}
+                        className="py-2.5 px-3 rounded-xl border border-zinc-800 text-zinc-600 hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5 transition-colors text-xs"
+                      >
+                        Son Seti Sil
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -319,30 +334,30 @@ export default function AddWorkoutModal({ onClose, initialWorkout }: Props) {
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-1.5">Notlar</label>
+            <label className="block text-xs font-medium text-zinc-500 mb-1.5 uppercase tracking-wide">Notlar</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="İsteğe bağlı notlar..."
-              rows={3}
-              className="w-full px-4 py-2.5 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors text-sm resize-none"
+              rows={2}
+              className={`${INPUT_BASE} px-4 py-3 text-sm resize-none`}
             />
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-1">
+          <div className="flex gap-3 pt-1 pb-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors text-sm font-medium"
+              className="flex-1 py-3.5 rounded-2xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors text-sm font-medium"
             >
               İptal
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-semibold text-sm transition-all shadow-lg shadow-orange-500/20"
+              className="flex-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white font-bold text-sm transition-all shadow-lg shadow-orange-600/20 flex-1"
             >
-              {isEdit ? 'Kaydet' : 'Ekle'}
+              {isEdit ? 'Kaydet' : 'Antrenmanı Ekle'}
             </button>
           </div>
         </form>

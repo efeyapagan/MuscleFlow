@@ -1,17 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { Flame } from 'lucide-react'
-import { Suspense } from 'react'
 
-function LoginForm() {
-  const searchParams = useSearchParams()
+export default function RegisterPage() {
+  const router = useRouter()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const justRegistered = searchParams.get('registered') === '1'
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -19,19 +16,30 @@ function LoginForm() {
     setLoading(true)
 
     const fd = new FormData(e.currentTarget)
-    const result = await signIn('credentials', {
-      email: fd.get('email'),
-      password: fd.get('password'),
-      callbackUrl: '/',
-      redirect: false,
+    const name = fd.get('name') as string
+    const email = fd.get('email') as string
+    const password = fd.get('password') as string
+
+    if (password.length < 6) {
+      setError('Şifre en az 6 karakter olmalı.')
+      setLoading(false)
+      return
+    }
+
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
     })
 
-    if (result?.error) {
-      setError('E-posta veya şifre hatalı.')
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error ?? 'Bir hata oluştu.')
       setLoading(false)
-    } else {
-      window.location.href = result?.url ?? '/'
+      return
     }
+
+    router.push('/login?registered=1')
   }
 
   return (
@@ -43,18 +51,23 @@ function LoginForm() {
             <Flame className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">SportTrack</h1>
-          <p className="text-zinc-400 text-sm mt-1">Antrenmanlarına giriş yap</p>
+          <p className="text-zinc-400 text-sm mt-1">Hesap oluştur</p>
         </div>
 
         {/* Card */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-          {justRegistered && (
-            <div className="mb-4 text-xs text-green-400 bg-green-400/10 border border-green-400/20 rounded-lg px-3 py-2">
-              Hesabın oluşturuldu! Giriş yapabilirsin.
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                Ad Soyad <span className="text-zinc-600">(isteğe bağlı)</span>
+              </label>
+              <input
+                name="name"
+                type="text"
+                placeholder="Ahmet Yılmaz"
+                className="w-full px-4 py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-500 focus:outline-none focus:border-orange-500 transition-colors text-sm"
+              />
+            </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5">E-posta</label>
               <input
@@ -66,7 +79,9 @@ function LoginForm() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-zinc-400 mb-1.5">Şifre</label>
+              <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+                Şifre <span className="text-zinc-600">(min. 6 karakter)</span>
+              </label>
               <input
                 name="password"
                 type="password"
@@ -87,26 +102,18 @@ function LoginForm() {
               disabled={loading}
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 disabled:opacity-60 text-white font-semibold text-sm transition-all shadow-lg shadow-orange-500/20 mt-1"
             >
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              {loading ? 'Oluşturuluyor...' : 'Hesap Oluştur'}
             </button>
           </form>
         </div>
 
         <p className="text-center text-zinc-500 text-sm mt-5">
-          Hesabın yok mu?{' '}
-          <Link href="/register" className="text-orange-400 hover:text-orange-300 font-medium">
-            Kayıt ol
+          Zaten hesabın var mı?{' '}
+          <Link href="/login" className="text-orange-400 hover:text-orange-300 font-medium">
+            Giriş yap
           </Link>
         </p>
       </div>
     </div>
-  )
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   )
 }
