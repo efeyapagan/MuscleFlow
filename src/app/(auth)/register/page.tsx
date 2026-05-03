@@ -35,8 +35,7 @@ export default function RegisterPage() {
     if (!res.ok) {
       try {
         const data = await res.json()
-        const detail = data.code ? ` [${data.code}]` : ''
-        setError((data.error ?? 'Bir hata oluştu.') + detail)
+        setError(data.error ?? 'Bir hata oluştu.')
       } catch {
         setError('Sunucu hatası. Lütfen tekrar dene.')
       }
