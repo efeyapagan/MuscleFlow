@@ -33,8 +33,12 @@ export default function RegisterPage() {
     })
 
     if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? 'Bir hata oluştu.')
+      try {
+        const data = await res.json()
+        setError(data.error ?? 'Bir hata oluştu.')
+      } catch {
+        setError('Sunucu hatası. Lütfen tekrar dene.')
+      }
       setLoading(false)
       return
     }

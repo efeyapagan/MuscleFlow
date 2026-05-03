@@ -8,40 +8,50 @@ async function ownsWorkout(userId: string, id: string) {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
 
-  const { id } = await params
-  if (!(await ownsWorkout(session.user.id, id))) {
-    return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
+    const { id } = await params
+    if (!(await ownsWorkout(session.user.id, id))) {
+      return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
+    }
+
+    const body = await req.json()
+    const workout = await prisma.workout.update({
+      where: { id },
+      data: {
+        title: body.title,
+        category: body.category,
+        status: body.status,
+        date: body.date,
+        duration: body.duration,
+        exercises: body.exercises,
+        notes: body.notes ?? null,
+      },
+    })
+
+    return NextResponse.json(workout)
+  } catch (err) {
+    console.error('[PATCH /api/workouts]', err)
+    return NextResponse.json({ error: 'Sunucu hatası.' }, { status: 500 })
   }
-
-  const body = await req.json()
-  const workout = await prisma.workout.update({
-    where: { id },
-    data: {
-      title: body.title,
-      category: body.category,
-      status: body.status,
-      date: body.date,
-      duration: body.duration,
-      exercises: body.exercises,
-      notes: body.notes ?? null,
-    },
-  })
-
-  return NextResponse.json(workout)
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: 'Yetkisiz' }, { status: 401 })
 
-  const { id } = await params
-  if (!(await ownsWorkout(session.user.id, id))) {
-    return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
+    const { id } = await params
+    if (!(await ownsWorkout(session.user.id, id))) {
+      return NextResponse.json({ error: 'Bulunamadı' }, { status: 404 })
+    }
+
+    await prisma.workout.delete({ where: { id } })
+    return new NextResponse(null, { status: 204 })
+  } catch (err) {
+    console.error('[DELETE /api/workouts]', err)
+    return NextResponse.json({ error: 'Sunucu hatası.' }, { status: 500 })
   }
-
-  await prisma.workout.delete({ where: { id } })
-  return new NextResponse(null, { status: 204 })
 }
